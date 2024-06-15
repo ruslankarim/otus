@@ -4,6 +4,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
+from torch.utils.data import DataLoader
+
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(
