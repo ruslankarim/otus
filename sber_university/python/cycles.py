@@ -48,16 +48,14 @@ for i in range(n + 1):
 # print('\n'.join(res))
 
 res = []
-n = 3
+n = 5
 for i in range(n * 2):
     if i == 0:
         continue
     line = [' '] * (n * 2 - 1)
     c = len(line) // 2
     offset = i - 1
-    start = c - offset
-    end = c + offset
-    if start == c:
+    if c - (i - 1) == c:
         line[c] = str(i)
     else:
         k = 1
@@ -66,11 +64,13 @@ for i in range(n * 2):
             end = end - 1
             for j in range(start, end + 1):
                 line[j] = str(k)
-                if j < c:
+                if j >= c:
                     k = k - 1
                 else:
                     k = k + 1
         else:
+            start = c - offset
+            end = c + offset
             for j in range(start, end + 1):
                 line[j] = str(k)
                 if j < c:
