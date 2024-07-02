@@ -48,16 +48,17 @@
 # # print('\n'.join(res))
 
 res = []
-n = 8
-for i in range(n * 2):
+n = 8 * 2
+for i in range(n):
     if i == 0:
         continue
-    line = [' '] * (n * 2 - 1)
+    line = [' '] * (n - 1)
     c = len(line) // 2
-    if c - (i - 1) == c:
+    if i == 1:
         line[c] = str(i)
     else:
         k = 1
+
         if i < c + 1:
             start = c - (i - 1)
             end = c + (i - 1)
