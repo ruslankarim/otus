@@ -8,12 +8,12 @@ for i in range(n):
     if i == 1:
         line[c] = str(i)
         continue
-    edge = c - (i - 1)
-    if edge < 0:
-        print('')
-    else:
-        start = edge
+
+    if c > i:
+        start = c - (i - 1)
         end = c + (i - 1)
+    else:
+        print('')
 
     res.append(''.join(line))
 print('\n'.join(res))
