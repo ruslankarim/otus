@@ -1,12 +1,10 @@
 res = []
-n = 9 * 2
+n = 5 * 2
 for i in range(n):
     if i == 0:
         continue
     line = [' '] * (n - 1)
     c = len(line) // 2
-    # start = 0
-    # end = len(line) - 1
     k = 1
     if i == 1 or i == len(line):
         start = c
@@ -23,6 +21,5 @@ for i in range(n):
             k = k - 1
         else:
             k = k + 1
-
     res.append(''.join(line))
 print('\n'.join(res))
