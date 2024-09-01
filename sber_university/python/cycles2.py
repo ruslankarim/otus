@@ -8,8 +8,14 @@ for i in range(n):
     k = 1
     line = [' '] * (n - 1)
     for j in range(start, end + 1):
-        line[j] = str(k)
-        result.append(''.join(line))
+        if i == c - 1:
+            start = end
+        if i > c - 1:
+            line[-j] = str(k)
+        else:
+            line[j] = str(k)
         k = k + 1
+    result.append(''.join(line))
+
     start = start - 1
 print('\n'.join(result))
