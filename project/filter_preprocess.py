@@ -31,13 +31,12 @@ stats = {
     'total_lines': 0,
     'both_matches': 0,
     'end_missing': 0,
-    'no_match': 0,
     'start_missing': 0,
     'categories': {key: 0 for key in category_keywords},
-    'index_solution_no_match_common': [],
-    'index_solution_no_match_civile': [],
-    'index_solution_no_match_bankruptcy': [],
-    'index_solution_no_match_administrative': [],
+    'index_solution_no_match_category_common': [],
+    'index_solution_no_match_category_civile': [],
+    'index_solution_no_match_category_bankruptcy': [],
+    'index_solution_no_match_category_administrative': [],
     'index_solution_not_start_common': [],
     'index_solution_not_start_civile': [],
     'index_solution_not_start_bankruptcy': [],
@@ -47,7 +46,6 @@ stats = {
     'index_solution_not_end_bankruptcy': [],
     'index_solution_not_end_administrative': [],
 }
-is_category = None
 # индекс решения
 count_solution_common = 0
 count_solution_civile = 0
@@ -61,7 +59,6 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
             break
 
         stats['total_lines'] += 1
-        is_category = True
         try:
             items = json.loads(line.strip())
 
@@ -92,6 +89,7 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
         if end_idx is not None:
             end_idx -= 1
 
+        result = []
         if end_idx is not None and start_idx is not None:
             result = items[start_idx + 1:end_idx]
             stats['both_matches'] += 1
@@ -102,7 +100,6 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
                 stats['index_solution_not_end_civile'].append(count_solution_civile)
             elif matched_category == 'bankruptcy':
                 stats['index_solution_not_end_bankruptcy'].append(count_solution_bankruptcy)
-                print(result)
             elif matched_category == 'administrative':
                 stats['index_solution_not_end_administrative'].append(count_solution_administrative)
             elif matched_category is None:
@@ -118,8 +115,15 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
                 stats['index_solution_not_start_administrative'].append(count_solution_administrative)
             elif matched_category is None:
                 stats['index_solution_not_start_common'].append(count_solution_common)
-        else:
-            stats['no_match'] += 1
+        elif start_idx is None and end_idx is None:
+            if matched_category == 'civile':
+                stats['index_solution_no_match_category_civile'].append(count_solution_civile)
+            elif matched_category == 'bankruptcy':
+                stats['index_solution_no_match_category_bankruptcy'].append(count_solution_bankruptcy)
+            elif matched_category == 'administrative':
+                stats['index_solution_no_match_category_administrative'].append(count_solution_administrative)
+            else:
+                stats['index_solution_no_match_category_common'].append(count_solution_common)
 
 
         if result:
@@ -142,17 +146,16 @@ for cat, count in stats['categories'].items():
 print(f"Фильтрация — оба совпадения: {stats['both_matches']}")
 print(f"Фильтрация — только start (без end): {stats['end_missing']}")
 print(f"Фильтрация — только end (нет start): {stats['start_missing']}")
-print(f"Фильтрация — пустые после обрезки: {stats['no_match']}")
-print(f"Индексы решений, где не было обоих маркеров (без категории): {stats['index_solution_no_match_common']}")
-print(f"Индексы решений, где не было обоих маркеров (гражданские): {stats['index_solution_no_match_civile']}")
-print(f"Индексы решений, где не было обоих маркеров (банкротные): {stats['index_solution_no_match_bankruptcy']}")
-print(f"Индексы решений, где не было обоих маркеров (административные): {stats['index_solution_no_match_administrative']}")
+print(f"Индексы решений, где не было обоих маркеров (без категории): {stats['index_solution_no_match_category_common']}")
+print(f"Индексы решений, где не было обоих маркеров (гражданские): {stats['index_solution_no_match_category_civile']}")
+print(f"Индексы решений, где не было обоих маркеров (банкротные): {stats['index_solution_no_match_category_bankruptcy']}")
+print(f"Индексы решений, где не было обоих маркеров (административные): {stats['index_solution_no_match_category_administrative']}")
 print(f"Индексы решений, где не было маркера начала (без категории): {stats['index_solution_not_start_common']}")
 print(f"Индексы решений, где не было маркера начала (гражданские): {stats['index_solution_not_start_civile']}")
 print(f"Индексы решений, где не было маркера начала (банкротные): {stats['index_solution_not_start_bankruptcy']}")
 print(f"Индексы решений, где не было маркера начала (административные): {stats['index_solution_not_start_administrative']}")
 print(f"Индексы решений, где не было маркера конца (без категории): {stats['index_solution_not_end_common']}")
-print(f"Индексы решений, где не было маркера конца (гражданские): {stats['index_solution_not_start_civile']}")
+print(f"Индексы решений, где не было маркера конца (гражданские): {stats['index_solution_not_end_civile']}")
 print(f"Индексы решений, где не было маркера конца (банкротные): {stats['index_solution_not_end_bankruptcy']}")
 print(f"Индексы решений, где не было маркера конца (административные): {stats['index_solution_not_end_administrative']}")
 
