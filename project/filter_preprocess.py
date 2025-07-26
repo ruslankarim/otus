@@ -1,21 +1,21 @@
 import json
 import re
 
-
 # === Параметр: сколько строк читать из файла (0 — без ограничений) ===
-max_rows = 0  # Например, 10 — прочитать только 10 строк; 0 — все строки
+max_rows = 0
 
 def spaced_word_regex(word):
     return r'\s*'.join(f"[{c.lower()}{c.upper()}]" for c in word)
+
 # === Регулярки начала и конца ===
-start_pattern = spaced_word_regex("установил")
-end_pattern = spaced_word_regex("решил")
+start_pattern = re.compile(spaced_word_regex("установил"), re.IGNORECASE)
+end_pattern = re.compile(spaced_word_regex("решил"), re.IGNORECASE)
 
 # === Категориальные ключевые слова ===
 category_keywords = {
-    'civile': r'гражданское',
-    'bankruptcy': r'банкротное',
-    'administrative': r'административное',
+    'civile': re.compile(r'гражданск', re.IGNORECASE),
+    'bankruptcy': re.compile(r'банкрот', re.IGNORECASE),
+    'administrative': re.compile(r'административ', re.IGNORECASE),
 }
 
 # === Файлы для записи ===
@@ -46,13 +46,12 @@ stats = {
     'index_solution_not_end_bankruptcy': [],
     'index_solution_not_end_administrative': [],
 }
-# индекс решения
+
 count_solution_common = 0
 count_solution_civile = 0
-count_solution_bankruptcy =  0
+count_solution_bankruptcy = 0
 count_solution_administrative = 0
 
-# === Основной цикл ===
 with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
     for line in infile:
         if 0 < max_rows <= stats['total_lines']:
@@ -61,85 +60,63 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
         stats['total_lines'] += 1
         try:
             items = json.loads(line.strip())
-
             if not isinstance(items, list):
                 continue
         except json.JSONDecodeError:
             continue
 
+        # Определение категории
         matched_category = None
-        for category, keyword in category_keywords.items():
-            if keyword.lower() in items[0].lower():
+        for category, pattern in category_keywords.items():
+            if pattern.search(items[0]):
                 matched_category = category
                 break
 
         if matched_category is None:
             count_solution_common += 1
-        else:
-            if matched_category == 'civile':
-                count_solution_civile += 1
-            elif matched_category == 'bankruptcy':
-                count_solution_bankruptcy += 1
-            elif matched_category == 'administrative':
-                count_solution_administrative += 1
+        elif matched_category == 'civile':
+            count_solution_civile += 1
+        elif matched_category == 'bankruptcy':
+            count_solution_bankruptcy += 1
+        elif matched_category == 'administrative':
+            count_solution_administrative += 1
 
-        # Поиск начала и конца в любом месте строки (не только с начала)
-        start_idx = next((i for i, s in enumerate(items) if re.search(start_pattern, s)), None)
-        end_idx = next((i for i in range(len(items) - 1, -1, -1) if re.search(end_pattern, items[i])), None)
+        # Поиск начала и конца
+        start_idx = next((i for i, s in enumerate(items) if start_pattern.search(s)), None)
+        end_idx = next((i for i in range(len(items) - 1, -1, -1) if end_pattern.search(items[i])), None)
         if end_idx is not None:
             end_idx -= 1
 
         result = []
-        if end_idx is not None and start_idx is not None:
+        if start_idx is not None and end_idx is not None and start_idx < end_idx:
             result = items[start_idx + 1:end_idx]
             stats['both_matches'] += 1
         elif start_idx is not None and end_idx is None:
-            result = items[start_idx + 1 : len(items)-1]
+            result = items[start_idx + 1:]
             stats['start_missing'] += 1
-            if matched_category == 'civile':
-                stats['index_solution_not_end_civile'].append(count_solution_civile)
-            elif matched_category == 'bankruptcy':
-                stats['index_solution_not_end_bankruptcy'].append(count_solution_bankruptcy)
-            elif matched_category == 'administrative':
-                stats['index_solution_not_end_administrative'].append(count_solution_administrative)
-            elif matched_category is None:
-                stats['index_solution_not_end_common'].append(count_solution_common)
+            key = f"index_solution_not_end_{matched_category or 'common'}"
+            stats[key].append(eval(f"count_solution_{matched_category or 'common'}"))
         elif start_idx is None and end_idx is not None:
-            result = items[0 :end_idx]
+            result = items[:end_idx]
             stats['end_missing'] += 1
-            if matched_category == 'civile':
-                stats['index_solution_not_start_civile'].append(count_solution_civile)
-            elif matched_category == 'bankruptcy':
-                stats['index_solution_not_start_bankruptcy'].append(count_solution_bankruptcy)
-            elif matched_category == 'administrative':
-                stats['index_solution_not_start_administrative'].append(count_solution_administrative)
-            elif matched_category is None:
-                stats['index_solution_not_start_common'].append(count_solution_common)
+            key = f"index_solution_not_start_{matched_category or 'common'}"
+            stats[key].append(eval(f"count_solution_{matched_category or 'common'}"))
         elif start_idx is None and end_idx is None:
-            if matched_category == 'civile':
-                stats['index_solution_no_match_category_civile'].append(count_solution_civile)
-            elif matched_category == 'bankruptcy':
-                stats['index_solution_no_match_category_bankruptcy'].append(count_solution_bankruptcy)
-            elif matched_category == 'administrative':
-                stats['index_solution_no_match_category_administrative'].append(count_solution_administrative)
-            else:
-                stats['index_solution_no_match_category_common'].append(count_solution_common)
-
+            key = f"index_solution_no_match_category_{matched_category or 'common'}"
+            stats[key].append(eval(f"count_solution_{matched_category or 'common'}"))
 
         if result:
+            out_file = files[matched_category] if matched_category else files['filtered']
+            json.dump(result, out_file, ensure_ascii=False)
+            out_file.write('\n')
             if matched_category:
-                json.dump(result, files[matched_category], ensure_ascii=False)
-                files[matched_category].write('\n')
                 stats['categories'][matched_category] += 1
-            else:
-                json.dump(result, files['filtered'], ensure_ascii=False)
-                files['filtered'].write('\n')
 
-# Закрываем файлы
+# Закрытие файлов
 for f in files.values():
     f.close()
 
-# Итоги
+# === Статистика ===
 print(f"Обработано строк: {stats['total_lines']}")
 for cat, count in stats['categories'].items():
     print(f"{cat}: {count} строк (категория)")
@@ -158,5 +135,4 @@ print(f"Индексы решений, где не было маркера ко�
 print(f"Индексы решений, где не было маркера конца (гражданские): {stats['index_solution_not_end_civile']}")
 print(f"Индексы решений, где не было маркера конца (банкротные): {stats['index_solution_not_end_bankruptcy']}")
 print(f"Индексы решений, где не было маркера конца (административные): {stats['index_solution_not_end_administrative']}")
-
 print("Результаты записаны в: civile.jsonl, bankruptcy.jsonl, administrative.jsonl, filtered_output.jsonl")
