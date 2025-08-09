@@ -26,8 +26,8 @@ def simple_sent_tokenize(text):
     return [s.strip() for s in sentences if s.strip()]
 
 # === Параметры ===
-max_rows = 500  # 0 = без ограничения, >0 = обрабатывать только первые N строк
-output_file = 'sentences_output_test.jsonl'
+max_rows = 0  # 0 = без ограничения, >0 = обрабатывать только первые N строк
+output_file = 'sentences_output.jsonl'
 
 # === Обработка CSV и сохранение JSONL ===
 processed_rows = 0

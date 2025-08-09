@@ -1,3 +1,5 @@
+# отсекаю решения в которых нет хотя бы одного маркера -> судя по всему это решения не первой инстанции
+import csv
 import json
 import re
 
@@ -18,7 +20,7 @@ category_keywords = {
     'administrative': re.compile(r'административ', re.IGNORECASE),
 }
 
-# === Файлы для записи ===
+# Подготовим файлы заранее (вместо JSON файлов)
 files = {
     'civile': open('civile.jsonl', 'w', encoding='utf-8'),
     'bankruptcy': open('bankruptcy.jsonl', 'w', encoding='utf-8'),
@@ -33,6 +35,7 @@ stats = {
     'end_missing': 0,
     'start_missing': 0,
     'categories': {key: 0 for key in category_keywords},
+    'without_category': 0,
     'index_solution_no_match_category_common': [],
     'index_solution_no_match_category_civile': [],
     'index_solution_no_match_category_bankruptcy': [],
@@ -92,12 +95,12 @@ with open('sentences_output_test.jsonl', 'r', encoding='utf-8') as infile:
             result = items[start_idx + 1:end_idx]
             stats['both_matches'] += 1
         elif start_idx is not None and end_idx is None:
-            result = items[start_idx + 1:]
+            result = False
             stats['start_missing'] += 1
             key = f"index_solution_not_end_{matched_category or 'common'}"
             stats[key].append(eval(f"count_solution_{matched_category or 'common'}"))
         elif start_idx is None and end_idx is not None:
-            result = items[:end_idx]
+            result = False
             stats['end_missing'] += 1
             key = f"index_solution_not_start_{matched_category or 'common'}"
             stats[key].append(eval(f"count_solution_{matched_category or 'common'}"))
@@ -120,9 +123,11 @@ for f in files.values():
 print(f"Обработано строк: {stats['total_lines']}")
 for cat, count in stats['categories'].items():
     print(f"{cat}: {count} строк (категория)")
-print(f"Фильтрация — оба совпадения: {stats['both_matches']}")
-print(f"Фильтрация — только start (без end): {stats['end_missing']}")
-print(f"Фильтрация — только end (нет start): {stats['start_missing']}")
+print(f"Без категории: {stats['without_category']}")
+print(f"Решений принятых в датасет: {stats['both_matches']}")
+print(f"Решения не принятых в датасет, причина: нет второго маркера: {stats['end_missing']}")
+print(f"Решения не принятых в датасет, причина: нет первого маркера: {stats['start_missing']}")
+print(f"Решения не принятых в датасет, всего: {stats['start_missing'] + stats['end_missing']}")
 print(f"Индексы решений, где не было обоих маркеров (без категории): {stats['index_solution_no_match_category_common']}")
 print(f"Индексы решений, где не было обоих маркеров (гражданские): {stats['index_solution_no_match_category_civile']}")
 print(f"Индексы решений, где не было обоих маркеров (банкротные): {stats['index_solution_no_match_category_bankruptcy']}")
