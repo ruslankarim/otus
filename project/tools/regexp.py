@@ -4,8 +4,11 @@ from pregex.core.pre import Pregex
 from pregex.core.tokens import Space
 
 point = 'пункт[а-яА-ЯёЁ]{,3}' #пункт/пунктом ...
+point_short = 'п\.|п' #п.
 sub_point = 'подпункт[а-яА-ЯёЁ]{,3}' #подпункт/подпунктом ...
+sub_point_short = 'п\.п\.|пп.|пп' #п.п./пп./пп
 article = 'стат[а-яА-ЯёЁ]{1,3}' #статья/статьи ...
+article_short = 'ст\.|ст' #ст.
 paragraph = 'абзац[а-яА-ЯёЁ]{,3}' #абзац/абзаца ...
 digits = r'[1-9]+' #123
 digits_point = r'(\.[1-9][0-9]*)+' # .1 или .123...
@@ -15,8 +18,13 @@ and_word = 'и'
 
 any_cyrillic = Pregex('[а-яА-ЯёЁ]', False)
 paragraph_pre = Pregex(paragraph, False)
-point_pre = Pregex(point, False)
+point_pre = Pregex(point_short, False)
+point_short_pre = Pregex(point, False)
 sub_point_pre = Pregex(sub_point, False)
+sub_point_short_pre = Pregex(sub_point_short, False)
+article_pre = Pregex(article, False)
+article_short_pre = Pregex(article_short, False)
+
 and_word_pre = Pregex(and_word, False)
 num_words_pre = Pregex(num_words, False)
 and_pre = Pregex(and_word, False)
@@ -37,47 +45,93 @@ patterns_paragraph = {
         .concat(Space().at_least(1)).concat(hyphen_pre).concat(Space().at_least(1))
         .concat(num_words_pre),
 
-"абзац число прописью, число прописью (более одного) и число прописью":
+    "абзац число, число (более одного) и число - число":
+        paragraph_pre
+        .concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat((comma_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1))).at_least(1))
+        .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat(Space().at_least(1)).concat(hyphen_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1)),
+
+    "абзац число прописью, число прописью (более одного) и число прописью":
         paragraph_num_word_comma_and_num_word_pre
         .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
         .concat(num_words_pre),
 
+    "абзац число, число (более одного) и число":
+        paragraph_pre
+        .concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat((comma_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1))).at_least(1))
+        .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1)),
+
     "абзац число прописью и число прописью - число прописью":
         paragraph_pre
+        .concat(Space().at_least(1))
         .concat(num_words_pre)
         .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
         .concat(num_words_pre)
         .concat(Space().at_least(1)).concat(hyphen_pre).concat(Space().at_least(1))
         .concat(num_words_pre),
 
+    "абзац число и число - число":
+        paragraph_pre
+        .concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat(Space().at_least(1)).concat(hyphen_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1)),
+
     "абзац число прописью и число прописью": paragraph_pre.concat(Space().at_least(1))
         .concat(num_words_pre).concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1)).concat(num_words_pre),
+
+    "абзац число и число":
+        paragraph_pre
+        .concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1))
+        .concat(Space().at_least(1)).concat(and_pre).concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1)),
 
     "абзац число прописью":
         paragraph_pre.concat(Space().at_least(1))
         .concat(num_words_pre),
+
+    "абзац число":
+        paragraph_pre.concat(Space().at_least(1))
+        .concat(AnyDigit().at_least(1)),
 }
 
 patterns_sub_point = {
     "подпункт число": sub_point_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
+    "п.п./пп./пп число": sub_point_short_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
 }
 
 
 patterns_point = {
     "пункт число": point_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
+    "п./п число": point_short_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
+}
+
+patterns_article = {
+    "статья число": point_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
+    "ст./ст число": point_short_pre.concat(Space().at_least(1)).concat(AnyDigit().at_least(1)),
 }
 
 
-def find(chunk, patterns):
+def find(text, patterns):
     """
     Ищет первый паттерн абзаца в куске текста.
     Возвращает capture, если найдено, иначе None.
     """
     for key, pattern in patterns.items():
-        capture = pattern.get_matches(chunk)
+        capture = pattern.get_matches(text)
         if capture:
             return capture, pattern
-    return None, Pregex()
+    return None, None
 
 def get_address_norm_in_act(text):
     """
